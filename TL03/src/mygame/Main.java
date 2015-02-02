@@ -30,7 +30,7 @@ public class Main extends SimpleApplication {
 
         rootNode.attachChild(geom);
         
-        System.out.println("Test01");
+        System.out.println("Test");
     }
 
     @Override
