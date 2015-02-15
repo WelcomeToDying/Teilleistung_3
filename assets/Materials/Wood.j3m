@@ -3,8 +3,8 @@ Material My Material : Common/MatDefs/Light/Lighting.j3md {
         DiffuseMap : Textures/WoodPlanksBeamed0056_4_L.png
         UseAlpha : false
         HighQuality : false
-        ShadowIntensity : -20.0
-        Shininess : 20.0
+        ShadowIntensity : 0.0
+        Shininess : 0.0
      }
     AdditionalRenderState {
     }

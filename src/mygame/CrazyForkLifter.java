@@ -5,7 +5,9 @@ import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
+import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.control.VehicleControl;
+import com.jme3.bullet.joints.SliderJoint;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
@@ -13,15 +15,22 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
+import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Cylinder;
 
 public class CrazyForkLifter extends SimpleApplication implements ActionListener {
 
     private BulletAppState bulletAppState;
     private VehicleControl forkLifter;
+    private RigidBodyControl body;
+    private SliderJoint slider;
+    private Camera cameraTop;
     private final float accelerationForce = 400.0f;
     private float steeringValue = 0;
     private float accelerationValue = 0;
@@ -39,6 +48,17 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
         LifterWorld.createWorld(rootNode, assetManager, bulletAppState.getPhysicsSpace());
         initialiseKeys();
         buildPlayer();
+        //System.out.print(getPhysicsSpace().getGravity(Vector3f.ZERO));
+        getPhysicsSpace().setAccuracy(0.01f);
+        
+        // Setup second view
+        cameraTop = cam.clone();
+        cameraTop.setViewPort(0.7f, 1f, 0f, 0.3f);
+        cameraTop.setLocation(new Vector3f(0.2846221f, 6.4271426f, 0.23380789f));
+
+        ViewPort CameraTopViewPort = renderManager.createMainView("Top", cameraTop);
+        CameraTopViewPort.setClearFlags(true, true, true);
+        CameraTopViewPort.attachScene(rootNode);
     }
 
     private PhysicsSpace getPhysicsSpace() {
@@ -64,12 +84,13 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
 
     private void buildPlayer() {
         Material matRed = new Material(getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        // matRed.getAdditionalRenderState().setWireframe(true);
         matRed.setColor("Color", ColorRGBA.Red);
         
         Material matBlue = new Material(getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        // matBlue.getAdditionalRenderState().setWireframe(true);
         matBlue.setColor("Color", ColorRGBA.Blue);
+        
+        Material matCyan = new Material(getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        matCyan.setColor("Color", ColorRGBA.Cyan);
 
         /*
          * CollisionShapes for collision detection
@@ -80,12 +101,12 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
          * -> Moving forkLifter is more stable
          */
         CompoundCollisionShape compoundCollisionShape = new CompoundCollisionShape();
-        BoxCollisionShape boxCollisionShape = new BoxCollisionShape(new Vector3f(1.2f, 0.5f, 2.4f));
+        BoxCollisionShape boxCollisionShape = new BoxCollisionShape(new Vector3f(1.2f, 0.5f, 3.2f));
         compoundCollisionShape.addChildShape(boxCollisionShape, new Vector3f(0, 1, 0));
 
         /*
          * VehicleNode to group geometry
-         * VehicleControl represents physical behaviour forkLifter
+         * VehicleControl represents physical behaviour of forkLifter
          */
         Node forkLifterNode = new Node("vehicleNode");
         forkLifter = new VehicleControl(compoundCollisionShape, 400);
@@ -154,11 +175,34 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
         rootNode.attachChild(forkLifterNode);
 
         getPhysicsSpace().add(forkLifter);
+        
+        
+        // Body and forklift
+        Node bodyNode = new Node("NodeBody");
+        Box bodyBox = new Box(1.2f, 0.5f, 3.2f);
+        Geometry bodyGeometry = new Geometry("Body", bodyBox);
+        bodyGeometry.setMaterial(matCyan);
+        body = new RigidBodyControl(new BoxCollisionShape(new Vector3f(1.2f, 0.5f, 3.2f)));
+        bodyNode.attachChild(bodyGeometry);
+        bodyNode.addControl(body);
+
+        rootNode.attachChild(bodyNode);
+        getPhysicsSpace().add(body);
+
+        //joint
+        slider=new SliderJoint(body, forkLifter, Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Y, true);
+        slider.setUpperLinLimit(.1f);
+        slider.setLowerLinLimit(-.1f);
+
+        getPhysicsSpace().add(slider);
     }
 
     @Override
     public void simpleUpdate(float tpf) {
         cam.lookAt(forkLifter.getPhysicsLocation(), Vector3f.UNIT_Y);
+        
+        cameraTop.setLocation(new Vector3f(forkLifter.getPhysicsLocation().getX(), forkLifter.getPhysicsLocation().getY() + 15, forkLifter.getPhysicsLocation().getZ()));
+        cameraTop.lookAt(forkLifter.getPhysicsLocation(), new Vector3f(0.2846221f, 6.4271426f, 0.23380789f));
     }
 
     public void onAction(String binding, boolean value, float tpf) {
