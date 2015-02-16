@@ -15,7 +15,6 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
-import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
@@ -28,10 +27,8 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
 
     private BulletAppState bulletAppState;
     private VehicleControl forkLifter;
-    private RigidBodyControl body;
-    private SliderJoint slider;
     private Camera cameraTop;
-    private final float accelerationForce = 400.0f;
+    private final float accelerationForce = 200.0f;
     private float steeringValue = 0;
     private float accelerationValue = 0;
 
@@ -39,6 +36,9 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
         CrazyForkLifter cfl = new CrazyForkLifter();
         cfl.start();
     }
+    private RigidBodyControl cabin;
+    private RigidBodyControl lift;
+    private RigidBodyControl fork;
 
     @Override
     public void simpleInitApp() {
@@ -50,7 +50,7 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
         buildPlayer();
         //System.out.print(getPhysicsSpace().getGravity(Vector3f.ZERO));
         getPhysicsSpace().setAccuracy(0.01f);
-        
+
         // Setup second view
         cameraTop = cam.clone();
         cameraTop.setViewPort(0.7f, 1f, 0f, 0.3f);
@@ -85,32 +85,44 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
     private void buildPlayer() {
         Material matRed = new Material(getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
         matRed.setColor("Color", ColorRGBA.Red);
-        
+
         Material matBlue = new Material(getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
         matBlue.setColor("Color", ColorRGBA.Blue);
-        
+
         Material matCyan = new Material(getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
         matCyan.setColor("Color", ColorRGBA.Cyan);
+
+        Material matOrange = new Material(getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        matOrange.setColor("Color", ColorRGBA.Orange);
+
+        Material matYellow = new Material(getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        matYellow.setColor("Color", ColorRGBA.Yellow);
 
         /*
          * CollisionShapes for collision detection
          * CompoundCollision shape for combining multiple base shapes (body, tires, forks)
          * BoxCollisionShape for box-shaped body of the car
-         * Attaching BoxCollisionShape to CompoundCollisionShape at a Vector of (0,1,0)
+         * Attaching BoxCollisionShapeCabin to CompoundCollisionShape at a Vector of (0,1,0)
          * -> Shifts effective center of mass of BoxCollisionShape to 0,-1,0 
          * -> Moving forkLifter is more stable
+         * Adding shapes for lift and forks
          */
         CompoundCollisionShape compoundCollisionShape = new CompoundCollisionShape();
-        BoxCollisionShape boxCollisionShape = new BoxCollisionShape(new Vector3f(1.2f, 0.5f, 3.2f));
-        compoundCollisionShape.addChildShape(boxCollisionShape, new Vector3f(0, 1, 0));
+        BoxCollisionShape boxCollisionShapeCabin = new BoxCollisionShape(new Vector3f(1.2f, 1f, 3.2f));
+        BoxCollisionShape boxCollisionShapeLift = new BoxCollisionShape(new Vector3f(1f, 2f, 0.1f));
+        BoxCollisionShape boxCollisionShapeFork1 = new BoxCollisionShape(new Vector3f(0.2f, 0.075f, 1f));
+        BoxCollisionShape boxCollisionShapeFork2 = new BoxCollisionShape(new Vector3f(0.2f, 0.075f, 1f));
+        compoundCollisionShape.addChildShape(boxCollisionShapeCabin, new Vector3f(0, 1.2f, 0));
+        compoundCollisionShape.addChildShape(boxCollisionShapeLift, new Vector3f(0f, 1.8f, 3.3f));
+        compoundCollisionShape.addChildShape(boxCollisionShapeFork1, new Vector3f(0.6f, 0f, 4.2f));
+        compoundCollisionShape.addChildShape(boxCollisionShapeFork2, new Vector3f(-0.6f, 0f, 4.2f));
 
         /*
          * VehicleNode to group geometry
          * VehicleControl represents physical behaviour of forkLifter
          */
         Node forkLifterNode = new Node("vehicleNode");
-        forkLifter = new VehicleControl(compoundCollisionShape, 400);
-        forkLifterNode.addControl(forkLifter);
+        forkLifter = new VehicleControl(compoundCollisionShape, 200);
 
         /*
          * Defining the physical properties of the forkLifter
@@ -168,39 +180,103 @@ public class CrazyForkLifter extends SimpleApplication implements ActionListener
         wheelBackRight.setMaterial(matBlue);
         forkLifter.addWheel(node4, new Vector3f(xOff, yOff, -zOff), wheelDirection, wheelAxle, restLength, radius, true);
 
+        // Adding the driver cabin
+        Node cabinNode = new Node("NodeCabin");
+        Box cabinBox = new Box(1.2f, 1f, 3.2f);
+        Geometry cabinGeometry = new Geometry("Cabin", cabinBox);
+        cabinGeometry.setMaterial(matCyan);
+        cabinGeometry.setLocalTranslation(new Vector3f(0f, 1.2f, 0f));
+        cabinNode.attachChild(cabinGeometry);
+
+        // Adding the lift
+        Node liftNode = new Node("NodeLift");
+        Box liftBox = new Box(1f, 2f, 0.1f);
+        Geometry liftGeometry = new Geometry("Lift", liftBox);
+        liftGeometry.setMaterial(matOrange);
+        liftGeometry.setLocalTranslation(new Vector3f(0f, 1.8f, 3.3f));
+        liftNode.attachChild(liftGeometry);
+        
+        // Adding the forks
+        Node forkNode = new Node("NodeFork");
+        Box forkBox = new Box(0.2f, 0.075f, 1f);
+        Geometry fork1Geometry = new Geometry("Fork1", forkBox);
+        fork1Geometry.setMaterial(matYellow);
+        fork1Geometry.setLocalTranslation(new Vector3f(0.6f, 0f, 4.2f));
+        Geometry fork2Geometry = new Geometry("Fork2", forkBox);
+        fork2Geometry.setMaterial(matYellow);
+        fork2Geometry.setLocalTranslation(new Vector3f(-0.6f, 0f, 4.2f));
+        forkNode.attachChild(fork1Geometry);
+        forkNode.attachChild(fork2Geometry);
+
+        // Attaching nodes to their position on the scene graph
         forkLifterNode.attachChild(node1);
         forkLifterNode.attachChild(node2);
         forkLifterNode.attachChild(node3);
         forkLifterNode.attachChild(node4);
+        forkLifterNode.attachChild(cabinNode);
+        forkLifterNode.attachChild(liftNode);
+        forkLifterNode.attachChild(forkNode);
+        forkLifterNode.addControl(forkLifter);
         rootNode.attachChild(forkLifterNode);
 
         getPhysicsSpace().add(forkLifter);
-        
-        
-        // Body and forklift
-        Node bodyNode = new Node("NodeBody");
-        Box bodyBox = new Box(1.2f, 0.5f, 3.2f);
-        Geometry bodyGeometry = new Geometry("Body", bodyBox);
-        bodyGeometry.setMaterial(matCyan);
-        body = new RigidBodyControl(new BoxCollisionShape(new Vector3f(1.2f, 0.5f, 3.2f)));
-        bodyNode.attachChild(bodyGeometry);
-        bodyNode.addControl(body);
 
-        rootNode.attachChild(bodyNode);
-        getPhysicsSpace().add(body);
+
+        // Body and forklift
+//        Node bodyNode = new Node("NodeBody");
+//        cabin = new RigidBodyControl(400f);
+//        lift = new RigidBodyControl(200f);
+//        fork = new RigidBodyControl(200f);
+//
+//        Node cabinNode = new Node("NodeCabin");
+//        Box cabinBox = new Box(1.2f, 0.5f, 3.2f);
+//        Geometry cabinGeometry = new Geometry("Cabin", cabinBox);
+//        cabinGeometry.setMaterial(matCyan);
+//        cabinGeometry.setLocalTranslation(new Vector3f(0f, -1f, 0f));
+//        cabinNode.attachChild(cabinGeometry);
+//        cabinNode.addControl(cabin);
+//
+//        Node liftNode = new Node("NodeLift");
+//        Box liftBox = new Box(1f, 2f, 0.1f);
+//        Geometry liftGeometry = new Geometry("Lift", liftBox);
+//        liftGeometry.setMaterial(matOrange);
+//        liftGeometry.setLocalTranslation(new Vector3f(0f, 0f, 3.25f));
+//        liftNode.attachChild(liftGeometry);
+//        liftNode.addControl(lift);
+//        
+//        Node forkNode = new Node("NodeFork");
+//        Box forkBox = new Box(0.2f, 0.2f, 0.5f);
+//        Geometry fork1Geometry = new Geometry("Fork1", forkBox);
+//        fork1Geometry.setMaterial(matYellow);
+//        fork1Geometry.setLocalTranslation(new Vector3f(0.4f, 0f, 3.3f));
+//        Geometry fork2Geometry = new Geometry("Fork2", forkBox);
+//        fork2Geometry.setMaterial(matYellow);
+//        fork2Geometry.setLocalTranslation(new Vector3f(-0.4f, 0f, 3.3f));
+//        forkNode.attachChild(fork1Geometry);
+//        forkNode.attachChild(fork2Geometry);
+//        forkNode.addControl(fork);
+
+//        bodyNode.attachChild(liftNode);
+//        bodyNode.attachChild(cabinNode);
+//        bodyNode.attachChild(forkNode);
+//        rootNode.attachChild(bodyNode);
+
+//        getPhysicsSpace().add(cabin);
+//        getPhysicsSpace().add(lift);
+//        getPhysicsSpace().add(fork);
 
         //joint
-        slider=new SliderJoint(body, forkLifter, Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Y, true);
-        slider.setUpperLinLimit(.1f);
-        slider.setLowerLinLimit(-.1f);
-
-        getPhysicsSpace().add(slider);
+//        slider = new SliderJoint(lift, forkLifter, Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Y, true);
+//        slider.setUpperLinLimit(.1f);
+//        slider.setLowerLinLimit(-.1f);
+//
+//        getPhysicsSpace().add(slider);
     }
 
     @Override
     public void simpleUpdate(float tpf) {
         cam.lookAt(forkLifter.getPhysicsLocation(), Vector3f.UNIT_Y);
-        
+
         cameraTop.setLocation(new Vector3f(forkLifter.getPhysicsLocation().getX(), forkLifter.getPhysicsLocation().getY() + 15, forkLifter.getPhysicsLocation().getZ()));
         cameraTop.lookAt(forkLifter.getPhysicsLocation(), new Vector3f(0.2846221f, 6.4271426f, 0.23380789f));
     }
