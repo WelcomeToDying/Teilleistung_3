@@ -1,6 +1,6 @@
 Material My Material : Common/MatDefs/Light/Lighting.j3md {
      MaterialParameters {
-        DiffuseMap : Textures/ConcreteFloors0055_9_L.png
+        DiffuseMap : Repeat Textures/ConcreteFloors0055_9_L.png
         GlowColor : 0.8 0.8 1.0 1.0
         Specular : 0.8 0.8 1.0 1.0
         Diffuse : 0.8 0.8 1.0 1.0

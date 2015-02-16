@@ -1,0 +1,8 @@
+Material My Material : Common/MatDefs/Light/Lighting.j3md {
+     MaterialParameters {
+        DiffuseMap : Textures/MetalBare0086_3_L.png
+        Shininess : 40.0
+     }
+    AdditionalRenderState {
+    }
+}

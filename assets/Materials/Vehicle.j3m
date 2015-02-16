@@ -1,0 +1,12 @@
+Material My Material : Common/MatDefs/Light/Lighting.j3md {
+     MaterialParameters {
+        DiffuseMap : Textures/MetalFloorsBare0008_2_L.png
+        Shininess : 30.0
+        AlphaDiscardThreshold : 0.0
+        HighQuality : true
+        Specular : 1.0 1.0 1.0 1.0
+        Diffuse : 1.0 1.0 1.0 1.0
+     }
+    AdditionalRenderState {
+    }
+}

@@ -46,9 +46,9 @@ public class LifterWorld {
         Node palletNode1 = new Node("NodePallet1");
         Node palletNode2 = new Node("NodePallet2");
         Node palletNode3 = new Node("NodePallet3");
-        RigidBodyControl palletPhy1 = new RigidBodyControl(2f);
-        RigidBodyControl palletPhy2 = new RigidBodyControl(2f);
-        RigidBodyControl palletPhy3 = new RigidBodyControl(2f);
+        RigidBodyControl palletPhy1 = new RigidBodyControl(20f);
+        RigidBodyControl palletPhy2 = new RigidBodyControl(20f);
+        RigidBodyControl palletPhy3 = new RigidBodyControl(20f);
 
         Box box = new Box(1f, 1f, 1f);
         Box palletFoot = new Box(0.2f, 0.4f, 0.2f);

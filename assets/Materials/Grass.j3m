@@ -1,8 +1,0 @@
-Material My Material : Common/MatDefs/Light/Lighting.j3md {
-     MaterialParameters {
-        DiffuseMap : Textures/Grass0130_1_L.png
-        Shininess : 10.0
-     }
-    AdditionalRenderState {
-    }
-}
